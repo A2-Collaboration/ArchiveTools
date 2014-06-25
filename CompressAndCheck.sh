@@ -5,44 +5,56 @@
 set -e # fail on error
 
 
+function echo_log {
+    echo $1 >> $(basename $0)-$STARTDATE.log
+}
+
 function start {
-    FILES=$(ls *.dat)
-    echo $FILES
+    STARTDATE=$(date +%F-%R:%S)
+    ls *.dat | xargs -n1 -P2 $0 start_wrapper $STARTDATE    
 }
 
 function start_wrapper {
-    FILE=$1
+    STARTDATE=$1
+    FILE=$2
     FILEXZ=$FILE.xz
 
     # skip if already there
     if [ -s $FILEXZ ] ; then
-        echo "$FILEXZ already exists, skipping."
+        echo_log "$FILE: $FILEXZ already exists, skipping."
         return
     fi
     FILESIZE=$(stat -c %s $FILE)
 
     # hash and compress
-    echo "md5sum'ing and xz'ing '$FILE', size=$FILESIZE..."
-    MD5SUM=$(cat $FILE | pv -s $FILESIZE | \
+    echo_log "$FILE: md5sum'ing and xz'ing '$FILE', size=$FILESIZE..."
+    MD5SUM=$(cat $FILE | pv -s $FILESIZE -cN $FILE | \
         tee >(xz -4 > $FILEXZ) \
         | md5sum | cut -d' ' -f1)
-    echo "md5sum of input file: $MD5SUM"
+    echo_log "$FILE: md5sum of input file $FILE: $MD5SUM"
 
+    # destroy data for test cases
     #cp test2.dat.xz test1.dat.xz
+    #dd if=/dev/urandom of=test1.dat.xz bs=4M count=1
     
     # uncompress and check, write
-    echo "md5sum'ing and unxz'ing '$FILEXZ'..."
-    MD5SUM_CHECK=$(cat $FILEXZ | \
-        tee >(md5sum | sed s/-/$FILEXZ/ >> MD5SUM) | \
+    echo_log "$FILE: md5sum'ing and unxz'ing '$FILEXZ'..."
+    FILESIZEXZ=$(stat -c %s $FILE)
+    MD5SUM_CHECK=$(cat $FILEXZ | pv -s $FILESIZE -cN $FILEXZ | \
+        tee >(md5sum | sed s/-/$FILEXZ/ > $FILE.MD5SUM) | \
         xzcat | md5sum | cut -d' ' -f1)
-    echo "md5sum of uncompressed file: $MD5SUM_CHECK"
+    echo_log "$FILE: md5sum of uncompressed file $FILEXZ: $MD5SUM_CHECK"
     if [ "x$MD5SUM" != "x$MD5SUM_CHECK" ]; then
-        echo "ERROR $FILE: MD5SUMs don't match."
+        rm -f $FILE.MD5SUM
+        echo "$FILE: ERROR: MD5SUMs don't match..."
         exit 1
     fi
-    echo "rm'ing $FILE"
-    
-    echo "SUCCESS $FILE"
+    # after successful check, add the MD5SUM and remove the original
+    echo_log "$FILE: rm'ing $FILE"
+    cat $FILE.MD5SUM >> MD5SUM
+    rm -f $FILE.MD5SUM
+    #rm -f $FILE 
+    echo_log "$FILE: SUCCESS"
 }
 
 # Then, what to do finally?
