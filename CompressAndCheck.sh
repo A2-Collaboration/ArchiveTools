@@ -49,6 +49,9 @@ function start_wrapper {
         | md5sum | cut -d' ' -f1)
     echo_log "$FILE: md5sum of input file $FILE: $MD5SUM"
 
+    # print newline to make pv output a little better...
+    echo ""
+    
     # destroy data for test cases
     #cp test2.dat.xz test1.dat.xz
     #dd if=/dev/urandom of=test1.dat.xz bs=4M count=1
