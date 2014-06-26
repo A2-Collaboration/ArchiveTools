@@ -10,8 +10,23 @@ function echo_log {
 }
 
 function start {
+    # gather some infos...
     STARTDATE=$(date +%F-%R:%S)
-    ls *.dat | xargs -n1 -P2 $0 start_wrapper $STARTDATE    
+    TOTALSIZE_G=$(du --apparent-size -B G -c *.dat | grep total | cut -f1)
+    TOTALSIZE=$(du --apparent-size -b -c *.dat | grep total | cut -f1)
+
+    # do the jobs, but also propagate Ctrl-C to children
+    trap "killall -qw -s TERM $0 start_wrapper" INT
+    ls *.dat | xargs -n1 -P2 $0 start_wrapper $STARTDATE
+
+    # gather some more infos and print summary to log
+    SUCCESS=$(grep SUCCESS $(basename $0)-$STARTDATE.log | wc -l)
+    ERROR=$(grep ERROR $(basename $0)-$STARTDATE.log | wc -l)
+    TOTALSIZE_XZ_G=$(du --apparent-size -B G -c *.dat.xz | grep total | cut -f1)
+    TOTALSIZE_XZ=$(du --apparent-size -b -c *.dat.xz | grep total | cut -f1)
+    echo_log "Finished compression of $TOTALSIZE_G to $TOTALSIZE_XZ_G"
+    echo_log "Ratio: $(echo "$TOTALSIZE_XZ/$TOTALSIZE" | bc -l)"
+    echo_log "Errors: $ERROR, Successful: $SUCCESS"
 }
 
 function start_wrapper {
@@ -21,13 +36,14 @@ function start_wrapper {
 
     # skip if already there
     if [ -s $FILEXZ ] ; then
-        echo_log "$FILE: $FILEXZ already exists, skipping."
+        echo_log "$FILE: $FILEXZ already exists, SUCCESS."
         return
     fi
     FILESIZE=$(stat -c %s $FILE)
 
     # hash and compress
     echo_log "$FILE: md5sum'ing and xz'ing '$FILE', size=$FILESIZE..."
+    trap "rm -f $FILEXZ" INT # cleanup if interrupted
     MD5SUM=$(cat $FILE | pv -s $FILESIZE -cN $FILE | \
         tee >(xz -4 > $FILEXZ) \
         | md5sum | cut -d' ' -f1)
@@ -55,6 +71,8 @@ function start_wrapper {
     rm -f $FILE.MD5SUM
     #rm -f $FILE 
     echo_log "$FILE: SUCCESS"
+    # print newline to make pv output a little better...
+    echo ""
 }
 
 # Then, what to do finally?
