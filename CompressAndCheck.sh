@@ -42,7 +42,7 @@ function start {
 
     # do the jobs, but also propagate Ctrl-C to children
     trap "killall -qw -s TERM $0 start_wrapper" INT
-    ls *.dat | xargs -n1 -P$WORKER $0 --delete $DELETE start_wrapper $STARTDATE
+    find -name '*.dat' -type f -print0 | xargs -0 -n1 -P$WORKER $0 --delete $DELETE start_wrapper $STARTDATE
 
     # gather some more infos and print summary to log
     SUCCESS=$(grep SUCCESS $(basename $0)-$STARTDATE.log | wc -l)
