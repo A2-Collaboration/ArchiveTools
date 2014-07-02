@@ -4,6 +4,31 @@
 
 set -e # fail on error
 
+# default options
+DELETE=0
+WORKER=4
+
+while :
+do
+    case $1 in
+        --delete)
+            DELETE=$2
+            shift 2
+            ;;
+        --worker)
+            WORKER=$2
+            shift 2
+            ;;
+        --) # End of all options
+            shift
+            break
+            ;;
+        *)  # no more options. Stop while loop
+            break
+            ;;
+    esac
+done
+
 
 function echo_log {
     echo $1 >> $(basename $0)-$STARTDATE.log
@@ -17,7 +42,7 @@ function start {
 
     # do the jobs, but also propagate Ctrl-C to children
     trap "killall -qw -s TERM $0 start_wrapper" INT
-    ls *.dat | xargs -n1 -P2 $0 start_wrapper $STARTDATE
+    ls *.dat | xargs -n1 -P$WORKER $0 --delete $DELETE start_wrapper $STARTDATE
 
     # gather some more infos and print summary to log
     SUCCESS=$(grep SUCCESS $(basename $0)-$STARTDATE.log | wc -l)
@@ -72,7 +97,9 @@ function start_wrapper {
     echo_log "$FILE: rm'ing $FILE"
     cat $FILE.MD5SUM >> MD5SUM
     rm -f $FILE.MD5SUM
-    #rm -f $FILE 
+    if [[ $DELETE = 1 ]]; then
+        rm -f $FILE
+    fi
     echo_log "$FILE: SUCCESS"
     # print newline to make pv output a little better...
     echo ""
@@ -87,7 +114,7 @@ case $1 in
         start_wrapper "${@:2}"
         ;;    
     *)
-        echo "Usage: $0 start"
+        echo "Usage: $0 [--delete 0] [--worker 4] start"
         exit 255
         ;;
 esac
