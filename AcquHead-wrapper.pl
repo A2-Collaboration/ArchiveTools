@@ -24,6 +24,8 @@ for(@out) {
   $f{$name} = $val;
 }
 
+$f{RunNote} =~ s/Please enter a comment \(and hit return\)//;
+
 my $format = $f{'Mk2?'} ? 'Mk2' : 'Mk1';
 my $label = "Run $f{RunNumber} on $f{Time} to $f{OutFile} as $format";
 
