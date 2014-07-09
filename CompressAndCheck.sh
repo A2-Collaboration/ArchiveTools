@@ -40,8 +40,7 @@ function start {
     TOTALSIZE_G=$(du --apparent-size -B G -c *.dat | grep total | cut -f1)
     TOTALSIZE=$(du --apparent-size -b -c *.dat | grep total | cut -f1)
 
-    # do the jobs, but also propagate Ctrl-C to children
-    trap "killall -qw -s TERM $0 start_wrapper" INT
+    # do the jobs
     find -name '*.dat' -type f -print0 | xargs -0 -n1 -P$WORKER $0 --delete $DELETE start_wrapper $STARTDATE
 
     # gather some more infos and print summary to log
@@ -68,7 +67,7 @@ function start_wrapper {
 
     # hash and compress
     echo_log "$FILE: md5sum'ing and xz'ing '$FILE', size=$FILESIZE..."
-    trap "rm -f $FILEXZ" INT # cleanup if interrupted
+    trap "rm -f $FILEXZ" INT TERM # cleanup if interrupted
     MD5SUM=$(cat $FILE | pv -s $FILESIZE -cN $FILE | \
         tee >(xz -4 > $FILEXZ) \
         | md5sum | cut -d' ' -f1)
