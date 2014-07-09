@@ -41,13 +41,14 @@ function start {
     TOTALSIZE=$(du --apparent-size -b -c *.dat | grep total | cut -f1)
 
     # do the jobs
-    find -name '*.dat' -type f -print0 | xargs -0 -n1 -P$WORKER $0 --delete $DELETE start_wrapper $STARTDATE
+    find . -name '*.dat' -type f -print0 | \
+        xargs -0 -n1 -P$WORKER $0 --delete $DELETE start_wrapper $STARTDATE
 
     # gather some more infos and print summary to log
     SUCCESS=$(grep SUCCESS $(basename $0)-$STARTDATE.log | wc -l)
     ERROR=$(grep ERROR $(basename $0)-$STARTDATE.log | wc -l)
-    TOTALSIZE_XZ_G=$(du --apparent-size -B G -c *.dat.xz | grep total | cut -f1)
-    TOTALSIZE_XZ=$(du --apparent-size -b -c *.dat.xz | grep total | cut -f1)
+    TOTALSIZE_XZ_G=$(du --apparent-size -B G -c *.dat.xz | grep total | cut -f1 || echo 0) 
+    TOTALSIZE_XZ=$(du --apparent-size -b -c *.dat.xz | grep total | cut -f1 || echo 0)
     echo_log "Finished compression of $TOTALSIZE_G to $TOTALSIZE_XZ_G"
     echo_log "Ratio: $(echo "$TOTALSIZE_XZ/$TOTALSIZE" | bc -l)"
     echo_log "Errors: $ERROR, Successful: $SUCCESS"
@@ -55,7 +56,7 @@ function start {
 
 function start_wrapper {
     STARTDATE=$1
-    FILE=$2
+    FILE=$(basename $2)
     FILEXZ=$FILE.xz
 
     # skip if already there
