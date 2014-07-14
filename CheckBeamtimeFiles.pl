@@ -66,7 +66,11 @@ sub WorkOnDir {
 	    $n{nometadata}++;
 	}
     }
-    print "$dir\t ", join(', ', map {"$n{$_} $_"} sort keys %n), "\n";
+    print "$dir\t ", join(', ', map {"$n{$_} $_"} sort keys %n),"\n";
+    if(@otherfiles>0) {
+        print 'Other files: ', join(' ',@otherfiles), "\n";
+    }
+    
     #print Dumper(\%rundata);
     #print Dumper(\@otherfiles);
 }
