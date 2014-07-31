@@ -7,12 +7,17 @@ set -e # fail on error
 # default options
 DELETE=0
 WORKER=4
+IGNORENEWEST=0
 
 while :
 do
     case $1 in
         --delete)
             DELETE=$2
+            shift 2
+            ;;
+	--ignorenewest)
+            IGNORENEWEST=$2
             shift 2
             ;;
         --worker)
@@ -39,10 +44,19 @@ function start {
     STARTDATE=$(date +%F-%R:%S)
     TOTALSIZE_G=$(du --apparent-size -B G -c *.dat | grep total | cut -f1)
     TOTALSIZE=$(du --apparent-size -b -c *.dat | grep total | cut -f1)
+    
+    if [[ $IGNORENEWEST = 1 ]]; then
+        NEWESTFILE=$(ls -1rt *.dat | tail -1)
+	GREP_CMD="grep -v $NEWESTFILE"
+    else
+	GREP_CMD="cat"
+    fi
+
+    echo_log "Starting compression..."
 
     # do the jobs
-    find . -name '*.dat' -type f -print0 | \
-        xargs -0 -n1 -P$WORKER $0 --delete $DELETE start_wrapper $STARTDATE
+    find . -name '*.dat' -type f | $GREP_CMD | \
+        xargs -n1 -P$WORKER $0 --delete $DELETE start_wrapper $STARTDATE
 
     # gather some more infos and print summary to log
     SUCCESS=$(grep SUCCESS $(basename $0)-$STARTDATE.log | wc -l)
@@ -114,7 +128,7 @@ case $1 in
         start_wrapper "${@:2}"
         ;;    
     *)
-        echo "Usage: $0 [--delete 0] [--worker 4] start"
+        echo "Usage: $0 [--delete 0] [--worker 4] [--ignorenewest 0] start"
         exit 255
         ;;
 esac
