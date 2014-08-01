@@ -4,6 +4,8 @@
 
 set -e # fail on error
 
+LOCKFILE=.lock-CompressAndCheck.sh
+
 # default options
 DELETE=0
 WORKER=4
@@ -40,6 +42,13 @@ function echo_log {
 }
 
 function start {
+    # check lock
+    if [ -f $LOCKFILE ]; then
+	echo Lockfile $LOCKFILE exists, exit.
+	exit 1
+    fi
+    touch $LOCKFILE
+
     # gather some infos...
     STARTDATE=$(date +%F-%R:%S)
     TOTALSIZE_G=$(du --apparent-size -B G -c *.dat | grep total | cut -f1)
@@ -66,6 +75,7 @@ function start {
     echo_log "Finished compression of $TOTALSIZE_G to $TOTALSIZE_XZ_G"
     echo_log "Ratio: $(echo "$TOTALSIZE_XZ/$TOTALSIZE" | bc -l)"
     echo_log "Errors: $ERROR, Successful: $SUCCESS"
+    rm $LOCKFILE
 }
 
 function start_wrapper {
@@ -108,10 +118,10 @@ function start_wrapper {
         exit 1
     fi
     # after successful check, add the MD5SUM and remove the original
-    echo_log "$FILE: rm'ing $FILE"
     cat $FILE.MD5SUM >> MD5SUM
     rm -f $FILE.MD5SUM
     if [[ $DELETE = 1 ]]; then
+	echo_log "$FILE: rm'ing $FILE"
         rm -f $FILE
     fi
     echo_log "$FILE: SUCCESS"
@@ -126,7 +136,7 @@ case $1 in
         ;;
     start_wrapper)
         start_wrapper "${@:2}"
-        ;;    
+        ;;
     *)
         echo "Usage: $0 [--delete 0] [--worker 4] [--ignorenewest 0] start"
         exit 255
