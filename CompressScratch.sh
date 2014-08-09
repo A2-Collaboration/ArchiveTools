@@ -1,4 +1,5 @@
 #!/bin/bash
+PATH=/usr/local/bin:/usr/bin:/bin:/opt/ArchiveTools
 set -e # fail on error
 cd /mnt/rundata/scratch
 # silently compress, use logfile to watch progress
