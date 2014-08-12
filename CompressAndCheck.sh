@@ -10,6 +10,7 @@ LOCKFILE=.lock-CompressAndCheck.sh
 DELETE=0
 WORKER=4
 IGNORENEWEST=0
+TOSYSLOG=0
 
 while :
 do
@@ -20,6 +21,10 @@ do
             ;;
 	--ignorenewest)
             IGNORENEWEST=$2
+            shift 2
+            ;;
+	--syslog)
+            TOSYSLOG=$2
             shift 2
             ;;
         --worker)
@@ -38,7 +43,11 @@ done
 
 
 function echo_log {
-    echo $1 >> $(basename $0)-$STARTDATE.log
+    if [[ $TOSYSLOG = 1 ]]; then
+	echo $1 | logger -t "CompressAndCheck.sh"
+    else
+	echo $1 >> $(basename $0)-$STARTDATE.log
+    fi    
 }
 
 function start {
@@ -63,13 +72,18 @@ function start {
 
     echo_log "Starting compression..."
 
-    # do the jobs
+    # do the jobs, pass some arguments
     find . -name '*.dat' -type f | $GREP_CMD | \
-        xargs -n1 -P$WORKER $0 --delete $DELETE start_wrapper $STARTDATE
+        xargs -n1 -P$WORKER $0 --delete $DELETE --syslog $TOSYSLOG start_wrapper $STARTDATE
 
     # gather some more infos and print summary to log
-    SUCCESS=$(grep SUCCESS $(basename $0)-$STARTDATE.log | wc -l)
-    ERROR=$(grep ERROR $(basename $0)-$STARTDATE.log | wc -l)
+    if [[ $TOSYSLOG = 1 ]]; then
+	SUCCESS="Unknown"
+	ERROR="Unknown"
+    else
+	SUCCESS=$(grep SUCCESS $(basename $0)-$STARTDATE.log | wc -l)
+	ERROR=$(grep ERROR $(basename $0)-$STARTDATE.log | wc -l)
+    fi
     TOTALSIZE_XZ_G=$(du --apparent-size -B G -c *.dat.xz | grep total | cut -f1 || echo 0) 
     TOTALSIZE_XZ=$(du --apparent-size -b -c *.dat.xz | grep total | cut -f1 || echo 0)
     echo_log "Finished compression of $TOTALSIZE_G to $TOTALSIZE_XZ_G"
@@ -138,7 +152,7 @@ case $1 in
         start_wrapper "${@:2}"
         ;;
     *)
-        echo "Usage: $0 [--delete 0] [--worker 4] [--ignorenewest 0] start"
+        echo "Usage: $0 [--syslog 0] [--delete 0] [--worker 4] [--ignorenewest 0] start"
         exit 255
         ;;
 esac
