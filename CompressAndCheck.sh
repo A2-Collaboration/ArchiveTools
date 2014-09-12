@@ -51,12 +51,14 @@ function echo_log {
 }
 
 function start {
-    # check lock
+    # check lock, this is rather stupid but should serve the purpose
+    # if run periodically via cron
     if [ -f $LOCKFILE ]; then
 	      echo Lockfile $LOCKFILE exists, exit.
 	      exit 1
     fi
     touch $LOCKFILE
+    trap "rm -f $LOCKFILE" INT TERM # clean lockfile if interrupted
 
     # gather some infos...
     STARTDATE=$(date +%F-%R:%S)
