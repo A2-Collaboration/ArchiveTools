@@ -19,11 +19,11 @@ do
             DELETE=$2
             shift 2
             ;;
-	--ignorenewest)
+	      --ignorenewest)
             IGNORENEWEST=$2
             shift 2
             ;;
-	--syslog)
+	      --syslog)
             TOSYSLOG=$2
             shift 2
             ;;
@@ -44,17 +44,17 @@ done
 
 function echo_log {
     if [[ $TOSYSLOG = 1 ]]; then
-	echo $1 | logger -t "CompressAndCheck.sh"
+	      echo $1 | logger -t "CompressAndCheck.sh"
     else
-	echo $1 >> $(basename $0)-$STARTDATE.log
+	      echo $1 >> $(basename $0)-$STARTDATE.log
     fi    
 }
 
 function start {
     # check lock
     if [ -f $LOCKFILE ]; then
-	echo Lockfile $LOCKFILE exists, exit.
-	exit 1
+	      echo Lockfile $LOCKFILE exists, exit.
+	      exit 1
     fi
     touch $LOCKFILE
 
@@ -65,9 +65,9 @@ function start {
     
     if [[ $IGNORENEWEST = 1 ]]; then
         NEWESTFILE=$(ls -1rt *.dat | tail -1)
-	GREP_CMD="grep -v $NEWESTFILE"
+	      GREP_CMD="grep -v $NEWESTFILE"
     else
-	GREP_CMD="cat"
+	      GREP_CMD="cat"
     fi
 
     echo_log "Starting compression..."
@@ -78,11 +78,11 @@ function start {
 
     # gather some more infos and print summary to log
     if [[ $TOSYSLOG = 1 ]]; then
-	SUCCESS="Unknown"
-	ERROR="Unknown"
+	      SUCCESS="Unknown"
+	      ERROR="Unknown"
     else
-	SUCCESS=$(grep SUCCESS $(basename $0)-$STARTDATE.log | wc -l)
-	ERROR=$(grep ERROR $(basename $0)-$STARTDATE.log | wc -l)
+	      SUCCESS=$(grep SUCCESS $(basename $0)-$STARTDATE.log | wc -l)
+	      ERROR=$(grep ERROR $(basename $0)-$STARTDATE.log | wc -l)
     fi
     TOTALSIZE_XZ_G=$(du --apparent-size -B G -c *.dat.xz | grep total | cut -f1 || echo 0) 
     TOTALSIZE_XZ=$(du --apparent-size -b -c *.dat.xz | grep total | cut -f1 || echo 0)
@@ -135,7 +135,7 @@ function start_wrapper {
     cat $FILE.MD5SUM >> MD5SUM
     rm -f $FILE.MD5SUM
     if [[ $DELETE = 1 ]]; then
-	echo_log "$FILE: rm'ing $FILE"
+	      echo_log "$FILE: rm'ing $FILE"
         rm -f $FILE
     fi
     echo_log "$FILE: SUCCESS"
