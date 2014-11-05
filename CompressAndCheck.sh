@@ -41,6 +41,7 @@ do
     esac
 done
 
+STARTDATE=$(date +%F-%R:%S)
 
 function echo_log {
     if [[ $TOSYSLOG = 1 ]]; then
@@ -50,18 +51,16 @@ function echo_log {
     fi    
 }
 
-function start {
-    # check lock, this is rather stupid but should serve the purpose
-    # if run periodically via cron
-    if [ -f $LOCKFILE ]; then
-	      echo Lockfile $LOCKFILE exists, exit.
-	      exit 1
-    fi
-    touch $LOCKFILE
-    trap "rm -f $LOCKFILE" INT TERM # clean lockfile if interrupted
+function error_exit {
+    ERRMSG="Error: $1"
+    echo $ERRMSG
+    echo_log $ERRMSG
+    exit 1
+}
 
+
+function start {   
     # gather some infos...
-    STARTDATE=$(date +%F-%R:%S)
     TOTALSIZE_G=$(du --apparent-size -B G -c *.dat | grep total | cut -f1)
     TOTALSIZE=$(du --apparent-size -b -c *.dat | grep total | cut -f1)
     
@@ -91,7 +90,6 @@ function start {
     echo_log "Finished compression of $TOTALSIZE_G to $TOTALSIZE_XZ_G"
     echo_log "Ratio: $(echo "$TOTALSIZE_XZ/$TOTALSIZE" | bc -l)"
     echo_log "Errors: $ERROR, Successful: $SUCCESS"
-    rm $LOCKFILE
 }
 
 function start_wrapper {
@@ -148,7 +146,10 @@ function start_wrapper {
 # Then, what to do finally?
 case $1 in
     start)
-        start "${@:2}"
+        {
+            flock -n 9 || error_exit "Cannot acquire lock, exiting."
+            start "${@:2}"
+        } 9>$LOCKFILE
         ;;
     start_wrapper)
         start_wrapper "${@:2}"
