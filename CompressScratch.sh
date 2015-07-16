@@ -6,7 +6,7 @@ cd /mnt/rundata/scratch
 CompressAndCheck.sh --ignorenewest 1 --syslog 1 --delete 1 --worker 5 start >/dev/null 2>&1
 # after compression, move the
 # compressed files to the production folder
-BEAMTIME=2015-05_G-E_HButanol
+BEAMTIME=2015-07_SolidTargetTest
 mkdir -p ../$BEAMTIME
 cp MD5SUM ../$BEAMTIME
 mv -n *.dat.xz ../$BEAMTIME
