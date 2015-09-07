@@ -62,6 +62,9 @@ sub WorkOnDir {
              exists $rundata{$r}->{'md5sum'}) {
       $n{nometadata}++;
     }
+    else {
+      push(@otherfiles, "'$dir/".$r.".*'");
+    }
   }
   print "$dir\t ", join(', ', map {"$n{$_} $_"} sort keys %n),"\n";
   if (@otherfiles>0) {
