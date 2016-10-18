@@ -66,9 +66,16 @@ function start {
     
     if [[ $IGNORENEWEST = 1 ]]; then
         NEWESTFILE=$(ls -1rt *.dat | tail -1)
-	      GREP_CMD="grep -v $NEWESTFILE"
+        SECONDFILE=$(ls -1rt *.dat | tail -2 | head -1)
+	if [[ $NEWESTFILE == *"Tagg"* && $SECONDFILE == *"Tagg"* ]]; then
+	    GREP_CMD="grep -v $NEWESTFILE"
+	elif [[ $NEWESTFILE == "TAPS"* && $SECONDFILE == "TAPS"* ]]; then
+	    GREP_CMD="grep -v $NEWESTFILE"
+	else
+	    GREP_CMD="grep -v $NEWESTFILE\|$SECONDFILE"
+	fi
     else
-	      GREP_CMD="cat"
+	    GREP_CMD="cat"
     fi
 
     echo_log "Starting compression..."
